@@ -28,26 +28,6 @@ The tool includes three main modules:
    - Includes an expected template format
    - Updates KPI cards and charts automatically after upload
 
-## Why This Matters
-
-For a virtual elderly care platform, state expansion should not be driven by population size alone. The best markets are likely those with a large addressable elderly population, high care coordination needs, relevant payer pools, feasible workforce conditions, and manageable competitive dynamics.
-
-This dashboard turns those qualitative and quantitative considerations into a practical operating tool that can support market prioritization, launch planning, and post-launch performance management.
-
-## Scoring Framework
-
-The expansion model evaluates each state across five factors:
-
-| Factor | Weight | Rationale |
-|---|---:|---|
-| Population 65+ living alone | 50% | Direct measure of addressable market size |
-| Traditional Medicare beneficiaries | 20% | Proxy for payer relevance and distribution potential |
-| Multiple chronic condition prevalence among 65+ | 10% | Proxy for care coordination need |
-| Community Health Worker supply | 10% | Signal of care workforce availability |
-| Home health market saturation | 10% | Directional proxy for competitive intensity |
-
-Each component is normalized against the highest observed state value, then weighted to create a composite attractiveness score.
-
 ## Key Features
 
 - Interactive 50-state ranking
