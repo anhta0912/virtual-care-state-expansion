@@ -5,7 +5,7 @@ The project combines a weighted state attractiveness model, an interactive U.S. 
 
 ## Live Demo
 
-View the deployed version here: [Insert Netlify link]
+View the deployed version here: https://virtual-care-state-expansion.netlify.app/
 
 ## Project Overview
 
