@@ -1,4 +1,4 @@
-# virtual-care-state-expansion
+# VIRTUAL CARE STATE EXPANSION
 An interactive dashboard prototype for evaluating U.S. state expansion opportunities and tracking launch performance for a virtual elderly care platform serving older adults living alone.
 
 The project combines a weighted state attractiveness model, an interactive U.S. map, launch performance dashboards, and an Excel upload feature for refreshing KPI data.
@@ -55,8 +55,4 @@ The tool includes three main modules:
 ```text
 virtual-elderly-care-platform/
 ├── index.html
-├── README.md
-└── screenshots/
-    ├── expansion-model.png
-    ├── launch-dashboard.png
-    └── data-upload.png
+└── README.md
