@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Elderly Care Platform — State Expansion Model</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<style>
+:root {
+  --navy:#0D3B6E; --blue:#1A5FFF; --teal:#00C2A8; --teal2:#007A6E;
+  --light:#EEF3F8; --white:#FFFFFF; --text:#0D1B3E; --muted:#64748B;
+  --border:#E2E8F0; --bg:#F8FAFC; --card:#FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:var(--navy);padding:0 2.5rem;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;height:60px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-circle{display:none}
+.logo-text{font-size:15px;font-weight:500;color:white}
+.logo-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:1px}
+.header-nav{display:flex;gap:4px}
+.nav-btn{padding:7px 18px;border-radius:99px;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;transition:all .2s}
+.nav-btn.active{background:var(--teal);color:var(--navy)}
+.nav-btn:not(.active){background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)}
+.nav-btn:hover:not(.active){background:rgba(255,255,255,.15);color:white}
+.main{max-width:1100px;margin:0 auto;padding:2rem 2rem 4rem}
+.section{display:none}.section.active{display:block}
+.page-title{margin-bottom:1.5rem}
+.page-title h1{font-family:'DM Serif Display',serif;font-size:28px;color:var(--navy);font-weight:400}
+.page-title p{font-size:14px;color:var(--muted);margin-top:6px;line-height:1.6}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:1.25rem}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.state-row{display:grid;grid-template-columns:24px 130px 1fr 48px;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.state-row:last-child{border:none}
+.rank-num{font-size:11px;font-weight:600;color:var(--muted);text-align:center}
+.state-name{font-size:13px;font-weight:500;color:var(--text)}
+.bar-track{background:var(--light);border-radius:4px;height:8px;overflow:hidden}
+.bar-fill{height:8px;border-radius:4px;transition:width .5s}
+.score-val{font-size:13px;font-weight:600;color:var(--navy);text-align:right}
+.weight-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.weight-row:last-child{border:none}
+.factor-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.weight-pill{color:white;font-size:12px;font-weight:600;padding:3px 10px;border-radius:99px;min-width:44px;text-align:center}
+.weight-desc{font-size:11px;color:var(--muted);margin-top:2px}
+.assumption-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem}
+.assumption-item{padding-left:1rem;border-left:3px solid var(--teal)}
+.assumption-item h4{font-size:13px;font-weight:600;color:var(--navy);margin-bottom:5px}
+.assumption-item p{font-size:13px;color:var(--muted);line-height:1.6}
+.map-tooltip{position:fixed;background:var(--navy);color:white;padding:10px 14px;border-radius:8px;font-size:12px;pointer-events:none;display:none;z-index:200;line-height:1.7;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.chart-wrap{position:relative;width:100%}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.kpi-section-title{font-size:12px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:1.5rem 0 .75rem;display:flex;align-items:center;gap:8px}
+.kpi-section-title::before{content:'';display:block;width:4px;height:16px;border-radius:2px}
+.leading-title::before{background:var(--blue)}
+.lagging-title::before{background:var(--teal2)}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:.5rem}
+.kpi-grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:.5rem}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem}
+.kpi-icon{font-size:18px;margin-bottom:8px}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:500;margin-bottom:4px;line-height:1.4}
+.kpi-value{font-size:24px;font-weight:600;color:var(--navy);line-height:1}
+.kpi-unit{font-size:13px;font-weight:400}
+.kpi-trend{font-size:11px;margin-top:5px}
+.trend-up{color:#155724}.trend-dn{color:#721C24}.trend-neu{color:var(--muted)}
+.kpi-bar-bg{background:var(--light);border-radius:3px;height:4px;margin-top:8px;overflow:hidden}
+.kpi-bar-fill{height:4px;border-radius:3px;transition:width .4s}
+.tabs2{display:flex;gap:6px}
+.tab2{padding:6px 16px;font-size:13px;border-radius:99px;border:1px solid var(--border);cursor:pointer;background:none;color:var(--muted);font-weight:500;font-family:'DM Sans',sans-serif}
+.tab2.active{background:var(--navy);color:#fff;border-color:var(--navy)}
+.state-sel-wrap{display:flex;align-items:center;gap:12px;margin-bottom:1.25rem;flex-wrap:wrap}
+.state-sel-wrap label{font-size:13px;font-weight:500;color:var(--muted);white-space:nowrap}
+.state-sel-wrap select{padding:8px 14px;font-size:14px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;min-width:220px}
+.launched-badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 10px;border-radius:99px;background:#D4EDDA;color:#155724;font-weight:500}
+.insight{background:linear-gradient(135deg,#E1F5EE 0%,#EEF3F8 100%);border:1px solid #9FE1CB;border-radius:12px;padding:1rem 1.25rem;font-size:13px;color:#0F6E56;line-height:1.6;margin-top:1rem}
+.drop-zone{border:2px dashed var(--border);border-radius:12px;padding:2.5rem;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:1rem}
+.drop-zone:hover{border-color:var(--teal);background:#F0FBF8}
+table.fmt{width:100%;font-size:12px;border-collapse:collapse}
+table.fmt th{background:var(--navy);color:white;padding:8px 12px;text-align:left;font-weight:500}
+table.fmt td{padding:7px 12px;color:var(--muted)}
+table.fmt tr:nth-child(even) td{background:var(--light)}
+.national-charts{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem}
+@media(max-width:768px){.two-col,.charts-row,.kpi-grid,.kpi-grid-4,.national-charts,.assumption-grid{grid-template-columns:1fr}.header{padding:0 1rem}.main{padding:1rem 1rem 3rem}}
+</style>
+</head>
+<body>
+<div class="map-tooltip" id="tooltip"></div>
+
+<header class="header">
+  <div class="logo">
+    
+    <div>
+      <div class="logo-text">Virtual Elderly Care Platform</div>
+      
+    </div>
+  </div>
+  <nav class="header-nav">
+    <button class="nav-btn active" onclick="switchSection('model',this)">Expansion model</button>
+    <button class="nav-btn" onclick="switchSection('dashboard',this)">Launch dashboard</button>
+    <button class="nav-btn" onclick="switchSection('upload',this)">Data upload</button>
+  </nav>
+</header>
+
+<main class="main">
+
+<!-- ══ EXPANSION MODEL ══ -->
+<section id="model" class="section active">
+  <div class="page-title">
+    <h1>State expansion model</h1>
+    <p>A weighted scoring framework evaluating 50 states across 5 factors to identify priority markets for Virtual Elderly Care Platform's next expansion phase.</p>
+  </div>
+
+  <div class="two-col">
+    <!-- Framework -->
+    <div class="card">
+      <div class="card-title">Scoring framework &amp; weights</div>
+      <div class="weight-row">
+        <div class="factor-dot" style="background:#1A5FFF"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Population 65+ living alone</div>
+          <div class="weight-desc">Direct TAM measure — largest addressable market for the platform's service</div>
+        </div>
+        <div class="weight-pill" style="background:var(--teal);color:var(--navy)">50%</div>
+      </div>
+      <div class="weight-row">
+        <div class="factor-dot" style="background:#00C2A8"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text)">MCC prevalence among 65+</div>
+          <div class="weight-desc">Proxy for unmet care coordination need</div>
+        </div>
+        <div class="weight-pill" style="background:var(--navy)">10%</div>
+      </div>
+      <div class="weight-row">
+        <div class="factor-dot" style="background:#1D9E75"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text)">Traditional Medicare beneficiaries</div>
+          <div class="weight-desc">Paying population; ease of health plan distribution</div>
+        </div>
+        <div class="weight-pill" style="background:var(--navy)">20%</div>
+      </div>
+      <div class="weight-row">
+        <div class="factor-dot" style="background:#EF9F27"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text)">CHW supply</div>
+          <div class="weight-desc">Care workforce signal — deprioritized as the platform can recruit regardless</div>
+        </div>
+        <div class="weight-pill" style="background:var(--navy)">10%</div>
+      </div>
+      <div class="weight-row">
+        <div class="factor-dot" style="background:#A26769"></div>
+        <div style="flex:1">
+          <div style="font-size:13px;color:var(--text)">Home health market saturation</div>
+          <div class="weight-desc">Directional competition proxy — not directly comparable to the platform's virtual model</div>
+        </div>
+        <div class="weight-pill" style="background:var(--navy)">10%</div>
+      </div>
+      <div style="margin-top:1rem;padding:10px 14px;background:var(--light);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.6">
+        <strong style="color:var(--navy)">Scoring method — Max 100:</strong> Each component score is calculated by taking the state with the highest observed value as 100. All other states are scored proportionally against that maximum. The weighted composite is the sum of each component score multiplied by its weight.
+      </div>
+    </div>
+
+    <!-- Rankings -->
+    <div class="card">
+      <div class="card-title">State rankings — all 50 states</div>
+      <div id="rankings" style="max-height:520px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="card">
+    <div class="card-title">State attractiveness map — hover for score breakdown</div>
+    <div id="us-map"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:1rem;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--muted);white-space:nowrap">Low (0)</span>
+      <div style="width:200px;height:12px;border-radius:6px;background:linear-gradient(to right,#E53935,#FDD835,#2E7D32);flex-shrink:0"></div>
+      <span style="font-size:12px;color:var(--muted);white-space:nowrap">High (84)</span>
+      <span style="font-size:12px;color:var(--muted);margin-left:16px">Hover any state to see full score breakdown</span>
+    </div>
+  </div>
+
+
+
+  <!-- Assumptions -->
+  <div class="card">
+    <div class="card-title">Key assumptions &amp; scope</div>
+    <div class="assumption-grid">
+      <div class="assumption-item">
+        <h4>Service scope</h4>
+        <p>Virtual Elderly Care Platform is modeled as a digital care coordination and resource navigation service for elderly individuals living alone who lack a reliable informal support network.</p>
+      </div>
+      <div class="assumption-item">
+        <h4>Greenfield analysis</h4>
+        <p>Treats Virtual Elderly Care Platform as a net-new startup — no carry-over from existing the platform business, brand, or infrastructure.</p>
+      </div>
+      <div class="assumption-item">
+        <h4>Traditional Medicare only</h4>
+        <p>Scoped exclusively to Original Medicare (Part B). Model should be refined if expanding to Medicare Advantage or commercial plans.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ LAUNCH DASHBOARD ══ -->
+<section id="dashboard" class="section">
+  <div class="page-title">
+    <h1>Launch performance dashboard</h1>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:1.25rem">
+    <div class="tabs2" id="dash-view-tabs">
+      <button class="tab2 active" onclick="setDashView('national',this)">National</button>
+      <button class="tab2" onclick="setDashView('state',this)">By state</button>
+    </div>
+  </div>
+
+  <!-- NATIONAL VIEW -->
+  <div id="national-view">
+    <!-- Launched states manager -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Launched markets</div>
+      <div style="display:flex;align-items:flex-start;gap:1.5rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:260px">
+          <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Select which states have launched and their launch date. Only launched states appear in national aggregations.</div>
+          <div id="launched-list" style="display:flex;flex-direction:column;gap:8px;max-height:260px;overflow-y:auto"></div>
+        </div>
+        <div style="min-width:240px">
+          <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Add market</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <select id="add-state-sel" style="padding:7px 12px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:'DM Sans',sans-serif"></select>
+            <input type="date" id="add-launch-date" style="padding:7px 12px;font-size:13px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-family:'DM Sans',sans-serif">
+            <button onclick="addLaunchedState()" style="padding:8px 16px;font-size:13px;font-family:'DM Sans',sans-serif;border:none;border-radius:8px;background:var(--navy);color:white;cursor:pointer;font-weight:500">Add market</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-section-title leading-title">Leading indicators — national aggregate</div>
+    <div class="kpi-grid" id="nat-leading-grid"></div>
+
+    <div class="kpi-section-title lagging-title">Lagging indicators — national aggregate</div>
+    <div class="kpi-grid" id="nat-lagging-grid"></div>
+
+    <div class="national-charts">
+      <div class="card">
+        <div class="card-title">Member activation rate by state</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natActChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Gross margin by state</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natMgnChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Members per Care Advocate by state</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natMpcChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">NPS by state</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natNpsChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Avg engagement per member by state</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natEngChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Avg subscription length by state</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natSubChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Revenue by state (USD)</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="natRevChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATE VIEW -->
+  <div id="state-view" style="display:none">
+    <div class="state-sel-wrap">
+      <label>Select state</label>
+      <select id="state-dropdown" onchange="setDashStateDropdown(this.value)" style="padding:8px 14px;font-size:14px;font-family:'DM Sans',sans-serif;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;min-width:220px"></select>
+
+    </div>
+
+    <div class="kpi-section-title leading-title">Leading indicators</div>
+    <div class="kpi-grid" id="leading-grid"></div>
+
+    <div class="kpi-section-title lagging-title">Lagging indicators</div>
+    <div class="kpi-grid" id="lagging-grid"></div>
+
+    <div class="charts-row" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-title">Member activation rate — monthly trend</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="actChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Gross margin by month</div>
+        <div class="chart-wrap" style="height:200px"><canvas id="mgnChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ DATA UPLOAD ══ -->
+<section id="upload" class="section">
+  <div class="page-title">
+    <h1>Data upload</h1>
+    <p>Upload your periodic Excel file to refresh the launch dashboard with real performance data. All KPIs and charts will update automatically from your file.</p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Upload performance data</div>
+    <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.style.borderColor='var(--teal)'" ondragleave="this.style.borderColor='var(--border)'" ondrop="handleDrop(event)">
+      <div style="font-size:32px;margin-bottom:10px">📂</div>
+      <div style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px">Drop your Excel file here or click to browse</div>
+      <div style="font-size:12px;color:var(--muted)">.xlsx or .xls files accepted</div>
+      <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this)">
+    </div>
+    <div id="upload-status" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:1rem"></div>
+    <div id="file-info" style="display:none;background:var(--light);border-radius:8px;padding:12px 16px;margin-bottom:1rem">
+      <div style="font-size:12px;font-weight:600;color:var(--navy);margin-bottom:4px">Loaded file</div>
+      <div id="file-details" style="font-size:13px;color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Expected file format — Dashboard sheet</div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:1rem;line-height:1.6">Your Excel file must contain a sheet named <strong style="color:var(--navy)">Dashboard</strong> with one row per state per reporting period.</p>
+    <div style="overflow-x:auto">
+      <table class="fmt">
+        <thead><tr>
+          <th>Column</th><th>Type</th><th>Description</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="font-family:monospace;color:var(--navy)">state_abbr</td><td>Text</td><td>2-letter state code (e.g. CA, FL, TX)</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">period</td><td>Text</td><td>Reporting period label (e.g. "Jan 2026", "Q1 2026")</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">launch_date</td><td>Date</td><td>Launch date in that state (YYYY-MM-DD)</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">total_members</td><td>Number</td><td>Total Virtual Elderly Care Platform customers in state</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">activation_rate</td><td>Number 0–100</td><td>% of eligible members activating within 30 days</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">engagement</td><td>Number</td><td>Avg calls/messages/service requests per member per month</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">nps</td><td>Number −100 to 100</td><td>Net Promoter Score after month 1</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">avg_subscription_months</td><td>Number</td><td>Average subscription length in months</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">gross_margin</td><td>Number 0–100</td><td>Gross margin % for the period</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">num_chw</td><td>Number</td><td>Number of Community Health Workers in state</td></tr>
+          <tr><td style="font-family:monospace;color:var(--navy)">revenue</td><td>Number</td><td>Total revenue in USD for the period (e.g. 450000)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:1rem;display:flex;gap:10px">
+      <button onclick="downloadTemplate()" style="padding:8px 18px;font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--navy);border-radius:8px;background:none;color:var(--navy);cursor:pointer;font-weight:500">Download template</button>
+    </div>
+  </div>
+
+  <div class="card" id="preview-card" style="display:none">
+    <div class="card-title">Data preview</div>
+    <div id="preview-table" style="overflow-x:auto;font-size:12px"></div>
+    <div style="margin-top:1rem;display:flex;align-items:center;gap:12px">
+      <button onclick="applyUploadedData()" style="padding:9px 20px;font-size:13px;font-family:'DM Sans',sans-serif;border:none;border-radius:8px;background:var(--navy);color:white;cursor:pointer;font-weight:500">Apply to dashboard</button>
+      <span id="apply-status" style="font-size:12px;color:var(--muted)"></span>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script>
+// ── State data (scores from spreadsheet, equal weights 50/10/20/10/10) ──────
+const STATES_DATA = [
+  {name:'California',abbr:'CA',rank:1,score:84.2,pop:50.0,mcc:8.8,med:20.0,chw:4.5,hh:1.0},
+  {name:'New York',abbr:'NY',rank:2,score:69.0,pop:36.87,mcc:8.6,med:10.8,chw:5.4,hh:7.2},
+  {name:'Florida',abbr:'FL',rank:3,score:68.2,pop:43.05,mcc:9.1,med:13.1,chw:1.0,hh:1.9},
+  {name:'Texas',abbr:'TX',rank:4,score:62.5,pop:36.25,mcc:9.6,med:13.0,chw:2.5,hh:1.1},
+  {name:'Pennsylvania',abbr:'PA',rank:5,score:49.1,pop:26.15,mcc:9.0,med:7.9,chw:2.8,hh:3.3},
+  {name:'Ohio',abbr:'OH',rank:6,score:44.2,pop:23.48,mcc:9.1,med:6.4,chw:3.0,hh:2.1},
+  {name:'Illinois',abbr:'IL',rank:7,score:44.1,pop:22.67,mcc:9.0,med:8.0,chw:3.0,hh:1.4},
+  {name:'New Jersey',abbr:'NJ',rank:8,score:43.1,pop:15.21,mcc:9.1,med:6.2,chw:2.6,hh:10.0},
+  {name:'Massachusetts',abbr:'MA',rank:9,score:41.0,pop:12.97,mcc:9.2,med:5.5,chw:7.7,hh:5.6},
+  {name:'Maryland',abbr:'MD',rank:10,score:39.7,pop:10.4,mcc:9.2,med:5.1,chw:9.0,hh:6.0},
+  {name:'North Carolina',abbr:'NC',rank:11,score:38.8,pop:18.73,mcc:8.7,med:5.7,chw:2.8,hh:2.9},
+  {name:'Michigan',abbr:'MI',rank:12,score:38.8,pop:20.01,mcc:8.8,med:4.9,chw:3.4,hh:1.6},
+  {name:'Washington',abbr:'WA',rank:13,score:35.8,pop:12.32,mcc:9.2,med:4.6,chw:6.1,hh:3.6},
+  {name:'Georgia',abbr:'GA',rank:14,score:34.0,pop:15.29,mcc:9.1,med:5.1,chw:0.8,hh:3.6},
+  {name:'Virginia',abbr:'VA',rank:15,score:32.9,pop:14.23,mcc:8.8,med:6.1,chw:1.3,hh:2.6},
+  {name:'Missouri',abbr:'MO',rank:16,score:32.5,pop:11.93,mcc:9.6,med:3.6,chw:5.4,hh:2.0},
+  {name:'Indiana',abbr:'IN',rank:17,score:31.2,pop:12.45,mcc:9.2,med:4.0,chw:3.5,hh:2.0},
+  {name:'Oregon',abbr:'OR',rank:18,score:31.1,pop:7.81,mcc:9.7,med:2.5,chw:8.6,hh:2.4},
+  {name:'Arizona',abbr:'AZ',rank:19,score:31.0,pop:12.85,mcc:8.9,med:4.3,chw:2.8,hh:2.1},
+  {name:'Wisconsin',abbr:'WI',rank:20,score:29.3,pop:11.71,mcc:10.0,med:3.3,chw:2.0,hh:2.3},
+  {name:'South Carolina',abbr:'SC',rank:21,score:29.1,pop:9.36,mcc:9.3,med:3.9,chw:1.8,hh:4.7},
+  {name:'Tennessee',abbr:'TN',rank:22,score:29.0,pop:12.18,mcc:8.6,med:4.1,chw:1.3,hh:2.8},
+  {name:'Minnesota',abbr:'MN',rank:23,score:28.4,pop:10.29,mcc:9.6,med:2.7,chw:4.0,hh:1.8},
+  {name:'Kentucky',abbr:'KY',rank:24,score:26.5,pop:8.37,mcc:9.1,med:2.6,chw:4.0,hh:2.4},
+  {name:'Alabama',abbr:'AL',rank:25,score:25.3,pop:9.4,mcc:9.9,med:2.6,chw:1.0,hh:2.4},
+  {name:'Mississippi',abbr:'MS',rank:26,score:24.3,pop:5.35,mcc:8.5,med:2.1,chw:2.6,hh:5.9},
+  {name:'Rhode Island',abbr:'RI',rank:27,score:23.4,pop:2.25,mcc:9.0,med:0.6,chw:8.7,hh:2.9},
+  {name:'Oklahoma',abbr:'OK',rank:28,score:23.4,pop:6.93,mcc:9.4,med:2.8,chw:2.7,hh:1.5},
+  {name:'Alaska',abbr:'AK',rank:29,score:22.8,pop:0.94,mcc:9.4,med:0.7,chw:10.0,hh:1.8},
+  {name:'Connecticut',abbr:'CT',rank:30,score:22.7,pop:7.11,mcc:8.9,med:1.9,chw:1.5,hh:3.3},
+  {name:'Louisiana',abbr:'LA',rank:31,score:22.7,pop:8.25,mcc:9.7,med:2.4,chw:0.8,hh:1.5},
+  {name:'Colorado',abbr:'CO',rank:32,score:22.4,pop:9.16,mcc:8.6,med:2.9,chw:0.0,hh:1.8},
+  {name:'Maine',abbr:'ME',rank:33,score:21.8,pop:3.17,mcc:9.8,med:0.9,chw:4.7,hh:3.1},
+  {name:'New Mexico',abbr:'NM',rank:34,score:21.5,pop:4.36,mcc:9.1,med:1.4,chw:5.3,hh:1.4},
+  {name:'Delaware',abbr:'DE',rank:35,score:21.5,pop:1.99,mcc:9.2,med:1.0,chw:4.9,hh:4.4},
+  {name:'Iowa',abbr:'IA',rank:36,score:21.2,pop:6.04,mcc:9.4,med:2.5,chw:2.2,hh:1.0},
+  {name:'Nevada',abbr:'NV',rank:37,score:20.6,pop:4.9,mcc:9.2,med:1.7,chw:3.8,hh:1.0},
+  {name:'Vermont',abbr:'VT',rank:38,score:20.3,pop:1.44,mcc:9.1,med:0.7,chw:4.9,hh:4.3},
+  {name:'Kansas',abbr:'KS',rank:39,score:19.9,pop:5.25,mcc:9.2,med:2.3,chw:1.5,hh:1.7},
+  {name:'Montana',abbr:'MT',rank:40,score:19.5,pop:2.19,mcc:9.4,med:1.1,chw:5.4,hh:1.5},
+  {name:'Arkansas',abbr:'AR',rank:41,score:19.2,pop:5.54,mcc:9.6,med:2.1,chw:0.0,hh:1.9},
+  {name:'West Virginia',abbr:'WV',rank:42,score:19.0,pop:3.84,mcc:8.8,med:1.2,chw:3.2,hh:2.0},
+  {name:'New Hampshire',abbr:'NH',rank:43,score:18.6,pop:2.78,mcc:8.8,med:1.3,chw:2.6,hh:3.1},
+  {name:'Utah',abbr:'UT',rank:44,score:18.6,pop:3.26,mcc:9.3,med:1.3,chw:3.1,hh:1.6},
+  {name:'South Dakota',abbr:'SD',rank:45,score:18.3,pop:1.64,mcc:9.5,med:0.7,chw:5.4,hh:1.0},
+  {name:'Hawaii',abbr:'HI',rank:46,score:17.0,pop:2.14,mcc:8.4,med:0.8,chw:3.1,hh:2.5},
+  {name:'Nebraska',abbr:'NE',rank:47,score:16.5,pop:3.71,mcc:8.4,med:1.5,chw:1.5,hh:1.4},
+  {name:'Idaho',abbr:'ID',rank:48,score:16.2,pop:2.92,mcc:8.1,med:1.2,chw:2.5,hh:1.6},
+  {name:'Wyoming',abbr:'WY',rank:49,score:16.2,pop:1.19,mcc:9.0,med:0.6,chw:4.4,hh:0.9},
+  {name:'North Dakota',abbr:'ND',rank:50,score:14.9,pop:1.55,mcc:9.6,med:0.6,chw:2.1,hh:1.1},
+];
+
+// ── Rankings ─────────────────────────────────────────────
+function renderRankings() {
+  const maxScore = 84.2;
+  document.getElementById('rankings').innerHTML = STATES_DATA.map(s => `
+    <div class="state-row">
+      <div class="rank-num">${s.rank}</div>
+      <div class="state-name">${s.name}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${(s.score/maxScore*100).toFixed(1)}%;background:var(--navy)"></div></div>
+      <div class="score-val">${s.score}</div>
+    </div>`).join('');
+}
+renderRankings();
+
+
+
+// ── US Map ────────────────────────────────────────────────
+const colorScale = d3.scaleLinear().domain([0,42,84.2]).range(['#E53935','#FDD835','#2E7D32']).clamp(true);
+
+d3.json('https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json').then(us => {
+  const w = document.getElementById('us-map').clientWidth || 700;
+  const h = w * 0.6;
+  const svg = d3.select('#us-map').append('svg').attr('viewBox',`0 0 ${w} ${h}`).attr('width','100%');
+  const proj = d3.geoAlbersUsa().scale(w*1.25).translate([w/2,h/2]);
+  const path = d3.geoPath(proj);
+  const tooltip = document.getElementById('tooltip');
+
+  svg.selectAll('path')
+    .data(topojson.feature(us, us.objects.states).features)
+    .join('path')
+    .attr('d', path)
+    .attr('fill', d => {
+      const found = STATES_DATA.find(s=>s.name===d.properties.name);
+      return found ? colorScale(found.score) : '#E2E8F0';
+    })
+    .attr('stroke','#fff').attr('stroke-width',0.8)
+    .on('mousemove', function(event,d) {
+      const n = d.properties.name;
+      const s = STATES_DATA.find(x=>x.name===n);
+      tooltip.style.display = 'block';
+      tooltip.style.left = (event.clientX+14)+'px';
+      tooltip.style.top  = (event.clientY-10)+'px';
+      if (s) {
+        tooltip.innerHTML =
+          `<strong>${n}</strong> &nbsp;·&nbsp; Rank #${s.rank}<br>`+
+          `Composite score: <strong>${s.score}</strong> / 100<br>`+
+          `<span style="color:rgba(255,255,255,.7);font-size:11px">`+
+          `Pop 65+: ${s.pop} &nbsp;·&nbsp; MCC: ${s.mcc} &nbsp;·&nbsp; Medicare: ${s.med}<br>`+
+          `CHW: ${s.chw} &nbsp;·&nbsp; HH sat.: ${s.hh}</span>`;
+      } else {
+        tooltip.innerHTML = `<strong>${n}</strong><br>Not evaluated`;
+      }
+    })
+    .on('mouseleave', ()=> tooltip.style.display='none');
+});
+
+// ── Dashboard data ────────────────────────────────────────
+const STATE_DASH_META = {
+  FL:{rank:3,score:68.2}, CA:{rank:1,score:84.2}, NY:{rank:2,score:69.0},
+  TX:{rank:4,score:62.5}, PA:{rank:5,score:49.1}, OH:{rank:6,score:44.2},
+  IL:{rank:7,score:44.1}, MI:{rank:12,score:38.8}, NC:{rank:11,score:38.8},
+  NJ:{rank:8,score:43.1}, GA:{rank:14,score:34.0}, MA:{rank:9,score:41.0},
+  VA:{rank:15,score:32.9}, WA:{rank:13,score:35.8}, AZ:{rank:19,score:31.0},
+  MD:{rank:10,score:39.7}, IN:{rank:17,score:31.2}, MO:{rank:16,score:32.5},
+  TN:{rank:22,score:29.0}, WI:{rank:20,score:29.3}, MN:{rank:23,score:28.4},
+  SC:{rank:21,score:29.1}, OR:{rank:18,score:31.1}, AL:{rank:25,score:25.3},
+  KY:{rank:24,score:26.5}, CO:{rank:32,score:22.4}, LA:{rank:31,score:22.7},
+  OK:{rank:28,score:23.4}, CT:{rank:30,score:22.7}, MS:{rank:26,score:24.3},
+  IA:{rank:36,score:21.2}, AR:{rank:41,score:19.2}, KS:{rank:39,score:19.9},
+  NV:{rank:37,score:20.6}, NM:{rank:34,score:21.5}, WV:{rank:42,score:19.0},
+  ME:{rank:33,score:21.8}, RI:{rank:27,score:23.4}, UT:{rank:44,score:18.6},
+  NE:{rank:47,score:16.5}, NH:{rank:43,score:18.6}, DE:{rank:35,score:21.5},
+  MT:{rank:40,score:19.5}, ID:{rank:48,score:16.2}, AK:{rank:29,score:22.8},
+  VT:{rank:38,score:20.3}, SD:{rank:45,score:18.3}, HI:{rank:46,score:17.0},
+  WY:{rank:49,score:16.2}, ND:{rank:50,score:14.9}
+};
+
+const STATE_NAMES = {};
+STATES_DATA.forEach(s => STATE_NAMES[s.abbr] = s.name);
+
+function genDash(rank, isFL) {
+  const t = isFL ? 1 : Math.max(0, 1-(rank-1)/50);
+  const j = (((rank*9301+49297)%233280)/233280-0.5)*0.12;
+  return {
+    totalMembers: Math.round((isFL?12400:1000+t*8000)*(1+j)),
+    activation: Math.round((isFL?78:42+t*32)*(1+j)),
+    engagement: Math.round((isFL?4.8:2.2+t*2.8)*(1+j)*10)/10,
+    nps: Math.round((isFL?72:40+t*34)*(1+j)),
+    subLen: Math.round((isFL?10.4:3+t*8)*(1+j)*10)/10,
+    margin: Math.round((isFL?41:12+t*30)*(1+j)),
+    mpc: Math.round((isFL?26:6+t*21)*(1+j)),
+    numChw: Math.round((isFL?18:3+t*15)*(1+j)),
+    revenue: Math.round((isFL?450000:50000+t*400000)*(1+j)),
+  };
+}
+
+const dashData = {};
+Object.entries(STATE_DASH_META).forEach(([k,v])=>{ dashData[k]=genDash(v.rank,k==='FL'); });
+
+// ── Launched states ───────────────────────────────────────
+let launchedStates = [
+  {abbr:'FL', date:'2023-01-01'},
+];
+
+function populateStateDropdowns() {
+  const addSel = document.getElementById('add-state-sel');
+  const stateDrop = document.getElementById('state-dropdown');
+  addSel.innerHTML = '';
+  stateDrop.innerHTML = '';
+  STATES_DATA.forEach(s => {
+    const inLaunched = launchedStates.find(l=>l.abbr===s.abbr);
+    if (!inLaunched) {
+      addSel.innerHTML += `<option value="${s.abbr}">${s.name}</option>`;
+    }
+    stateDrop.innerHTML += `<option value="${s.abbr}">${s.name}</option>`;
+  });
+}
+
+function renderLaunchedList() {
+  const el = document.getElementById('launched-list');
+  if (!launchedStates.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);font-style:italic">No markets launched yet.</div>';
+    return;
+  }
+  el.innerHTML = launchedStates.map(l => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--light);border-radius:8px">
+      <div class="launched-badge">✓ ${STATE_NAMES[l.abbr]||l.abbr}</div>
+      <div style="font-size:12px;color:var(--muted);flex:1">Launched ${l.date}</div>
+      <button onclick="removeLaunchedState('${l.abbr}')" style="font-size:11px;color:#721C24;background:none;border:none;cursor:pointer;padding:2px 6px">Remove</button>
+    </div>`).join('');
+}
+
+function addLaunchedState() {
+  const abbr = document.getElementById('add-state-sel').value;
+  const date = document.getElementById('add-launch-date').value;
+  if (!abbr) return;
+  if (!launchedStates.find(l=>l.abbr===abbr)) {
+    launchedStates.push({abbr, date: date||'TBD'});
+    renderLaunchedList();
+    populateStateDropdowns();
+    renderNational();
+  }
+}
+
+function removeLaunchedState(abbr) {
+  launchedStates = launchedStates.filter(l=>l.abbr!==abbr);
+  renderLaunchedList();
+  populateStateDropdowns();
+  renderNational();
+}
+
+// ── KPI card builder ──────────────────────────────────────
+function kpiCard(icon,label,value,unit,desc,trendClass,barPct,barColor) {
+  const bar = barPct!==null
+    ? `<div class="kpi-bar-bg"><div class="kpi-bar-fill" style="width:${Math.min(barPct,100)}%;background:${barColor}"></div></div>`:'';
+  return `<div class="kpi-card">
+    <div class="kpi-icon">${icon}</div>
+    <div class="kpi-label">${label}</div>
+    <div class="kpi-value">${value}<span class="kpi-unit"> ${unit}</span></div>
+    <div class="kpi-trend ${trendClass}">${desc}</div>${bar}
+  </div>`;
+}
+
+// ── National charts ───────────────────────────────────────
+let natActCh=null,natMgnCh=null,natMpcCh=null,natNpsCh=null,natEngCh=null,natSubCh=null;
+
+function makeBarChart(id,labels,data,colors,suffix) {
+  const existing = Chart.getChart(id);
+  if (existing) existing.destroy();
+  return new Chart(document.getElementById(id).getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[{data,backgroundColor:colors,borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{ticks:{color:'#64748B',font:{size:10},callback:v=>v+(suffix||'')},grid:{color:'#F1F5F9'}},
+        x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}}
+      }}
+  });
+}
+
+function renderNational() {
+  const active = launchedStates.map(l=>l.abbr).filter(a=>dashData[a]);
+  if (!active.length) {
+    ['nat-leading-grid','nat-lagging-grid'].forEach(id=>{
+      document.getElementById(id).innerHTML='<div style="font-size:13px;color:var(--muted);padding:1rem;font-style:italic">No launched markets yet. Add a market above.</div>';
+    });
+    return;
+  }
+  const d = active.map(a=>dashData[a]);
+  const avg = arr => Math.round(arr.reduce((a,x)=>a+x,0)/arr.length);
+  const avgF = arr => (arr.reduce((a,x)=>a+x,0)/arr.length).toFixed(1);
+
+  const totalM = d.reduce((a,x)=>a+x.totalMembers,0);
+  const avgAct = avg(d.map(x=>x.activation));
+  const avgEng = avgF(d.map(x=>x.engagement));
+
+  document.getElementById('nat-leading-grid').innerHTML =
+    kpiCard('👥','Total Virtual Elderly Care Platform customers',totalM.toLocaleString(),'','across all launched markets','trend-neu',Math.round(totalM/20000*100),'#1A5FFF') +
+    kpiCard('🎯','Member activation rate (30-day)',avgAct,'%','avg % activating within 30 days of signup','trend-up',avgAct,'#00C2A8') +
+    kpiCard('💬','Avg engagement per member',avgEng,'/mo','avg calls, messages & service requests','trend-neu',Math.round(avgEng/6*100),'#1D9E75');
+
+  const avgNps  = avg(d.map(x=>x.nps));
+  const avgSub  = avgF(d.map(x=>x.subLen));
+  const avgMgn  = avg(d.map(x=>x.margin));
+  const avgMpc  = avg(d.map(x=>x.mpc));
+
+  document.getElementById('nat-lagging-grid').innerHTML =
+    kpiCard('⭐','Member satisfaction & NPS',avgNps,'','since launch',avgNps>=65?'trend-up':'trend-neu',avgNps,'#1D9E75') +
+    kpiCard('📅','Avg subscription length',avgSub,'mo','rolling avg, all markets','trend-neu',Math.round(avgSub/14*100),'#1A5FFF') +
+    kpiCard('📈','Avg gross margin',avgMgn,'%','across all launched states','trend-neu',avgMgn,'#00C2A8') +
+    kpiCard('👥','Members per Care Advocate',avgMpc,'','national avg — target 25–30','trend-neu',Math.round(avgMpc/30*100),'#EF9F27') +
+    kpiCard('💰','Total revenue','$'+d.reduce((a,x)=>a+(x.revenue||0),0).toLocaleString(),'','combined revenue all markets','trend-up',50,'#7B61FF') +
+    kpiCard('🧑‍⚕️','Total CHWs',d.reduce((a,x)=>a+(x.numChw||0),0),'','Community Health Workers across markets','trend-neu',50,'#00C2A8');
+
+  const names = active.map(a=>STATE_NAMES[a]||a);
+  const palette = ['#0D3B6E','#1A5FFF','#00C2A8','#1D9E75','#EF9F27','#A26769','#7B61FF','#E53935'];
+  const cols = active.map((_,i)=>palette[i%palette.length]);
+
+  makeBarChart('natActChart',names,active.map(a=>dashData[a].activation),cols,'%');
+  makeBarChart('natMgnChart',names,active.map(a=>dashData[a].margin),cols,'%');
+  makeBarChart('natMpcChart',names,active.map(a=>dashData[a].mpc),cols,'');
+  makeBarChart('natNpsChart',names,active.map(a=>dashData[a].nps),cols,'');
+  makeBarChart('natEngChart',names,active.map(a=>dashData[a].engagement),cols,'');
+  makeBarChart('natSubChart',names,active.map(a=>dashData[a].subLen),cols,'mo');
+  makeBarChart('natRevChart',names,active.map(a=>dashData[a].revenue||0),cols,'');
+}
+
+// ── State dashboard ───────────────────────────────────────
+let actCh=null,mgnCh=null,curState='FL';
+
+function updateDashboard() {
+  const d = dashData[curState];
+  if (!d) return;
+  const months = ['Oct','Nov','Dec','Jan','Feb','Mar'];
+  const actT = [d.activation-18,d.activation-12,d.activation-7,d.activation-3,d.activation-1,d.activation].map(v=>Math.max(v,0));
+  const mgnT = [d.margin-12,d.margin-8,d.margin-5,d.margin-2,d.margin-1,d.margin].map(v=>Math.max(v,0));
+
+  document.getElementById('leading-grid').innerHTML =
+    kpiCard('👥','Total Virtual Elderly Care Platform customers',d.totalMembers.toLocaleString(),'','members in state','trend-neu',Math.round(d.totalMembers/15000*100),'#1A5FFF') +
+    kpiCard('🎯','Member activation rate (30-day)',d.activation,'%','share activating within 30 days of signup','trend-up',d.activation,'#00C2A8') +
+    kpiCard('💬','Level of engagement',d.engagement,'/mo','avg calls, messages & service requests','trend-neu',Math.round(d.engagement/6*100),'#1D9E75');
+
+  document.getElementById('lagging-grid').innerHTML =
+    kpiCard('⭐','Member satisfaction & NPS',d.nps,'','since launch',d.nps>=65?'trend-up':d.nps>=50?'trend-neu':'trend-dn',d.nps,'#1D9E75') +
+    kpiCard('📅','Avg subscription length',d.subLen,'mo','rolling avg, active members','trend-neu',Math.round(d.subLen/14*100),'#1A5FFF') +
+    kpiCard('📈','Gross margin',d.margin,'%','monthly','trend-neu',d.margin,'#00C2A8') +
+    kpiCard('👥','Members per Care Advocate',d.mpc,'','target 25–30 at scale','trend-neu',Math.round(d.mpc/30*100),'#EF9F27') +
+    kpiCard('💰','Revenue','$'+d.revenue.toLocaleString(),'','total revenue this period','trend-up',Math.round(d.revenue/500000*100),'#7B61FF') +
+    kpiCard('🧑‍⚕️','Number of CHWs',d.numChw,'','Community Health Workers in state','trend-neu',Math.round(d.numChw/30*100),'#00C2A8');
+
+  const existingAct = Chart.getChart('actChart'); if(existingAct) existingAct.destroy();
+  new Chart(document.getElementById('actChart').getContext('2d'),{
+    type:'line',
+    data:{labels:months,datasets:[{label:'Activation %',data:actT,borderColor:'#0D3B6E',backgroundColor:'rgba(13,59,110,0.06)',fill:true,tension:.4,pointRadius:3,pointBackgroundColor:'#0D3B6E'}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:100,ticks:{color:'#64748B',font:{size:10},callback:v=>v+'%'},grid:{color:'#F1F5F9'}},
+              x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}}}}
+  });
+
+  const existingMgn = Chart.getChart('mgnChart'); if(existingMgn) existingMgn.destroy();
+  new Chart(document.getElementById('mgnChart').getContext('2d'),{
+    type:'bar',
+    data:{labels:months,datasets:[{label:'Gross margin %',data:mgnT,backgroundColor:'#00C2A8',borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+      scales:{y:{min:0,max:60,ticks:{color:'#64748B',font:{size:10},callback:v=>v+'%'},grid:{color:'#F1F5F9'}},
+              x:{ticks:{color:'#64748B',font:{size:10}},grid:{display:false}}}}
+  });
+}
+
+function setDashStateDropdown(state) {
+  curState = state;
+  const meta = STATE_DASH_META[state];
+
+  updateDashboard();
+}
+
+let curDashView = 'national';
+function setDashView(view, btn) {
+  curDashView = view;
+  document.querySelectorAll('#dash-view-tabs .tab2').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('national-view').style.display = view==='national'?'block':'none';
+  document.getElementById('state-view').style.display = view==='state'?'block':'none';
+  if (view==='national') renderNational();
+  else updateDashboard();
+}
+
+// ── Navigation ────────────────────────────────────────────
+function switchSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='dashboard') {
+    if (curDashView==='national') renderNational();
+    else updateDashboard();
+  }
+}
+
+// ── Data upload ───────────────────────────────────────────
+let uploadedData = null;
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('drop-zone').style.borderColor='var(--border)';
+  const file = event.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (file) processFile(file);
+}
+function processFile(file) {
+  const status = document.getElementById('upload-status');
+  status.style.display='block';
+  status.style.background='#EEF3F8'; status.style.color='var(--navy)';
+  status.textContent='Reading file...';
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result,{type:'array'});
+      const sheetName = wb.SheetNames.includes('Dashboard')?'Dashboard':wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:''});
+      if (!rows.length) throw new Error('No data rows found.');
+      uploadedData = rows;
+      status.style.background='#D4EDDA'; status.style.color='#155724';
+      status.textContent=`✓ Loaded ${rows.length} rows from "${sheetName}" — ${file.name}`;
+      document.getElementById('file-info').style.display='block';
+      const states=[...new Set(rows.map(r=>r.state_abbr).filter(Boolean))];
+      const periods=[...new Set(rows.map(r=>r.period).filter(Boolean))];
+      document.getElementById('file-details').innerHTML=
+        `<strong>${rows.length}</strong> records &nbsp;·&nbsp; <strong>${states.length}</strong> states: ${states.join(', ')} &nbsp;·&nbsp; Periods: ${periods.join(', ')}`;
+      renderPreview(rows);
+    } catch(err) {
+      status.style.background='#F8D7DA'; status.style.color='#721C24';
+      status.textContent='✗ Error: '+err.message;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+function renderPreview(rows) {
+  const card=document.getElementById('preview-card');
+  card.style.display='block';
+  const cols=Object.keys(rows[0]);
+  const preview=rows.slice(0,8);
+  let html='<table class="fmt" style="min-width:600px"><thead><tr>'+cols.map(c=>`<th>${c}</th>`).join('')+'</tr></thead><tbody>';
+  preview.forEach((row,i)=>{
+    html+=`<tr${i%2===0?' style="background:var(--light)"':''}>` + cols.map(c=>`<td style="white-space:nowrap">${row[c]??''}</td>`).join('')+'</tr>';
+  });
+  if (rows.length>8) html+=`<tr><td colspan="${cols.length}" style="padding:8px 10px;color:var(--muted);font-style:italic">... and ${rows.length-8} more rows</td></tr>`;
+  html+='</tbody></table>';
+  document.getElementById('preview-table').innerHTML=html;
+}
+function applyUploadedData() {
+  if (!uploadedData) return;
+  const byState={};
+  uploadedData.forEach(row=>{
+    const s=(row.state_abbr||'').toUpperCase().trim();
+    if (!s) return;
+    if (!byState[s]) byState[s]=[];
+    byState[s].push(row);
+  });
+  Object.entries(byState).forEach(([abbr,rows])=>{
+    const latest=rows[rows.length-1];
+    dashData[abbr]={
+      totalMembers: Number(latest.total_members)||dashData[abbr]?.totalMembers||0,
+      activation:   Number(latest.activation_rate)||dashData[abbr]?.activation||0,
+      engagement:   Number(latest.engagement)||dashData[abbr]?.engagement||0,
+      nps:          Number(latest.nps)||dashData[abbr]?.nps||0,
+      subLen:       Number(latest.avg_subscription_months)||dashData[abbr]?.subLen||0,
+      margin:       Number(latest.gross_margin)||dashData[abbr]?.margin||0,
+      mpc:          Number(latest.members_per_chw)||dashData[abbr]?.mpc||0,
+      numChw:       Number(latest.num_chw)||dashData[abbr]?.numChw||0,
+      revenue:      Number(latest.revenue)||dashData[abbr]?.revenue||0,
+    };
+    if (latest.launch_date && !launchedStates.find(l=>l.abbr===abbr)) {
+      launchedStates.push({abbr, date: latest.launch_date});
+    }
+  });
+  renderLaunchedList();
+  populateStateDropdowns();
+  document.getElementById('apply-status').textContent='✓ Dashboard updated';
+  document.getElementById('apply-status').style.color='#155724';
+  switchSection('dashboard', document.querySelectorAll('.nav-btn')[1]);
+  setDashView('national', document.querySelectorAll('#dash-view-tabs .tab2')[0]);
+}
+
+function downloadTemplate() {
+  const headers = ['state_abbr','period','launch_date','total_members','activation_rate',
+    'engagement','nps','avg_subscription_months','gross_margin','num_chw','revenue'];
+  const example = ['FL','Jan 2026','2023-01-01','12400','78','4.8','72','10.4','41','18','450000'];
+  const ws = XLSX.utils.aoa_to_sheet([headers,example]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Dashboard');
+  XLSX.writeFile(wb,'Dashboard_Template.xlsx');
+}
+
+// ── Init ──────────────────────────────────────────────────
+populateStateDropdowns();
+renderLaunchedList();
+renderNational();
+setDashStateDropdown('FL');
+</script>
+</body>
+</html>
